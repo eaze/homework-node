@@ -46,7 +46,6 @@ function captureMostDependedPackages(count, callback) {
     (function(err, results) {
       if (err) throw Error(err);
       results = results.slice(0, count);
-      console.log(results);
       callback(null, results);
     });
 }
@@ -54,11 +53,17 @@ function captureMostDependedPackages(count, callback) {
 function downloadPackageTarball(pkg, callback) {
   var registryUrl = 'http://registry.npmjs.org/';
 
-  var filename = pkg.name + '-' + pkg.version;
+  var filename = isScoped(pkg)
+    ? pkg.name.split('/')[1] + '-' + pkg.version
+    : pkg.name + '-' + pkg.version;
+
   var pkgTarballUrl = registryUrl + pkg.name + '/-/' + filename + '.tgz';
 
   fs.ensureDir(tgzDir, function downloadTgz() {
-    var pkgLocation = tgzDir + filename + '.tgz';
+    var pkgLocation = isScoped(pkg)
+      ? tgzDir + pkg.name.replace('/','-') + '-' + pkg.version
+      : tgzDir + filename + '.tgz';
+
     var download = wget.download(pkgTarballUrl, pkgLocation);
 
     download
@@ -78,7 +83,9 @@ function downloadPackageTarball(pkg, callback) {
 }
 
 function extractPackageTarball(pkg, callback) {
-  var extractDir = pkgDir + pkg.name;
+  var extractDir = isScoped(pkg)
+    ? pkgDir + pkg.name.replace('/','-')
+    : pkgDir + pkg.name;
 
   fs.ensureDir(extractDir, function extractTgz() {
     fs
@@ -96,4 +103,8 @@ function extractPackageTarball(pkg, callback) {
         callback(null, extractDir);
       });
     });
+}
+
+function isScoped(pkg) {
+  return pkg.name.includes('@');
 }
