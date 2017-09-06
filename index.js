@@ -1,7 +1,7 @@
 'use strict';
 
 var async = require('async');
-var Xray = require('x-ray');
+var x = require('x-ray')();
 var tar = require('tar');
 var fs = require('fs-extra');
 var wget = require('wget');
@@ -9,6 +9,7 @@ var zlib = require('zlib');
 
 var tgzDir = './tarballs/';
 var pkgDir = './packages/';
+const MAX_CONNECTIONS = 50;
 
 module.exports = downloadPackages;
 
@@ -20,23 +21,15 @@ function downloadPackages (count, callback) {
 }
 
 function downloadPackageTarballs(callback, err, results) {
-  async.map(
+  async.mapLimit(
     results,
+    MAX_CONNECTIONS,
     downloadPackageTarball,
-    extractPackageTarballs.bind(this, callback)
-  );
-}
-
-function extractPackageTarballs(callback, err, results) {
-  async.map(
-    results,
-    extractPackageTarball,
     callback
   );
 }
 
 function captureMostDependedPackages(count, callback) {
-  var x = Xray();
   x('https://www.npmjs.com/browse/depended', '.package-details', [{
     name: 'h3 a',
     version: 'a.type-neutral-1'
@@ -44,10 +37,14 @@ function captureMostDependedPackages(count, callback) {
     .paginate('.pagination .next@href')
     .limit(Math.ceil(count/36))
     (function(err, results) {
-      if (err) throw Error(err);
+      if (err) return callback(err);
       results = results.slice(0, count);
       callback(null, results);
     });
+}
+
+function isScoped(pkg) {
+  return pkg.name.includes('@');
 }
 
 function downloadPackageTarball(pkg, callback) {
@@ -61,14 +58,14 @@ function downloadPackageTarball(pkg, callback) {
 
   fs.ensureDir(tgzDir, function downloadTgz() {
     var pkgLocation = isScoped(pkg)
-      ? tgzDir + pkg.name.replace('/','-') + '-' + pkg.version
+      ? tgzDir + pkg.name.replace('/','-') + '-' + pkg.version + '.tgz'
       : tgzDir + filename + '.tgz';
 
     var download = wget.download(pkgTarballUrl, pkgLocation);
 
     download
       .on('error', function onError(err) {
-        callback(err);
+        throw Error(err);
       })
       .on('end', function onEnd() {
         var result = {
@@ -77,7 +74,7 @@ function downloadPackageTarball(pkg, callback) {
           location: pkgLocation
         };
         console.log('Downloaded ' + result.name + ' to ' + result.location);
-        callback(null, result);
+        extractPackageTarball(result, callback);
       });
   });
 }
@@ -103,8 +100,4 @@ function extractPackageTarball(pkg, callback) {
         callback(null, extractDir);
       });
     });
-}
-
-function isScoped(pkg) {
-  return pkg.name.includes('@');
 }
