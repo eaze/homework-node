@@ -4,7 +4,7 @@
     "clean": "rm -rf *tgz; rm -rf packages/*"
   },
   "dependencies": {
-    "jsdom": "^11.2.0",
+    "jsdom": "^9.0.0",
     "json5": "^0.5.1",
     "request": "^2.83.0"
   },
