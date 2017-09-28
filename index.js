@@ -25,7 +25,6 @@ class Dependencies{
         let names;
         // iterate over each package parsed, populate array of package names
         for ( let i in packages ) {
-            console.log( i,offset, this.count );
             if ( package_names.length  + offset >= this.count ) {
                 break
             }
@@ -33,11 +32,11 @@ class Dependencies{
             try {
                 names = pkg.getElementsByClassName('name');
             } catch ( e ) {
-                console.log( "JG: error ", e);
+                console.log( "Error: ", e);
                 continue;
             }
             if ( names.length !== 1 ) {
-                console.log( "JG: names is malformed", names );
+                console.log( "Error:", names );
                 continue;
             }
             package_names.unshift(names[0].href.replace('/package/', ''));
@@ -59,7 +58,7 @@ class Dependencies{
 
                 // spawn seems to fail for large tarballs, for example rxjs
                 let untar = cp.exec(cmd);
-                untar.on('error', ( err ) => { console.log( "ERR!! ", err ) } );
+                untar.on('error', ( err ) => { console.log( "Error: ", err ) } );
                 untar.on('exit', (code,signal) => {
                     packages_downloaded += 1;
                     if ( packages_downloaded >= this.count ) {

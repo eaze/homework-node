@@ -22,9 +22,31 @@ test('download', function (t) {
     fs.readdir('./packages', function (err, files) {
       if (err) return callback(err)
       // Filter .gitignore and other hidden files
-      files = files.filter((file) => !/^\./.test(file))
-      t.equal(files.length, COUNT, `has ${COUNT} files`)
-      callback()
+      // also filter out dirs for scoped modules,
+      // they will be accounted for later
+      let unscoped_dirs = files.filter((file) => !/^[\@\.]/.test(file))
+      let num_dirs = unscoped_dirs.length;
+      let scoped_dirs = files.filter((file) => /^[\@]/.test(file));
+      if ( scoped_dirs.length === 0 ) {
+        t.equal(num_dirs, COUNT, `has ${COUNT} files`)
+        callback()
+      }
+      else {
+        let scoped_dirs_scraped = 0;
+        for ( let i in scoped_dirs ) {
+          let scoped_dir = scoped_dirs[i];
+          fs.readdir('./packages/'+scoped_dir, function (err, files) {
+            if (err) return callback(err)
+            // assumes no second degree scoped modules, i sont think that this is supported
+            num_dirs += files.filter((file) => !/^[\@\.]/.test(file)).length
+            scoped_dirs_scraped += 1;
+            if ( scoped_dirs_scraped >= scoped_dirs.length ) {
+              t.equal(num_dirs, COUNT, `has ${COUNT} files`)
+              callback()
+            }
+          })
+        }  
+      }  
     })
   }
 
