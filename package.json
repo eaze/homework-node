@@ -1,11 +1,16 @@
 {
   "scripts": {
-    "test": "node test.js"
+    "test": "node test.js",
+    "clean": "rm -rf *tgz; rm -rf packages/*"
   },
-  "dependencies": {},
+  "dependencies": {
+    "jsdom": "^11.2.0",
+    "json5": "^0.5.1",
+    "request": "^2.83.0"
+  },
   "devDependencies": {
     "get-folder-size": "~1.0.0",
-    "tape": "~4.6.0",
-    "run-series": "^1.1.4"
+    "run-series": "^1.1.4",
+    "tape": "^4.6.3"
   }
 }
