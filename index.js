@@ -29,12 +29,10 @@ class Dependencies{
                 break
             }
             let pkg = packages[i];
-            try {
-                names = pkg.getElementsByClassName('name');
-            } catch ( e ) {
-                console.log( "Error: ", e);
+            if ( typeof pkg.getElementsByClassName !== 'function' ) {
                 continue;
             }
+            names = pkg.getElementsByClassName('name');
             if ( names.length !== 1 ) {
                 console.log( "Error:", names );
                 continue;
