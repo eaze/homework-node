@@ -23,7 +23,7 @@ class Dependencies{
             winston.log( 'warning', 'In requestCallback, request returned error: ', error );
         }
             
-        jsdom.env(body, function (err, window) {
+        jsdom.env(body, (err, window) => {
             if ( err ) {
                 winston.log( 'warning', 'jsdom returned error: ', err );
             }
@@ -73,7 +73,7 @@ class Dependencies{
     
             this.downloadAndUntarPackages( package_names, this.offset );
             this.offset = new_offset;
-        }.bind(this));
+        });
     }
 
     // Packages can be downloaded and untarred either through cmdline utilities

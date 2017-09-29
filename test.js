@@ -5,9 +5,11 @@ const series = require('run-series')
 const fs = require('fs')
 const folderSize = require('get-folder-size')
 const download = require('./')
+const jsdom = require("jsdom");
+const request = require('request');
 
 test('download', function (t) {
-    t.plan(3)
+    t.plan(4)
 
     const COUNT = parseInt(process.env.COUNT, 10) || 10
 
@@ -15,7 +17,8 @@ test('download', function (t) {
         (callback) => download(COUNT, callback),
         verifyCount,
         verifySize,
-        verifyLodash
+        verifyLodash,
+        crossCheck
     ], t.end)
 
     function verifyCount (callback) {
@@ -71,5 +74,55 @@ test('download', function (t) {
         const _ = require('./packages/lodash')
         t.equal(typeof _.map, 'function', '_.map exists')
         callback()
+    }
+
+
+    // I discovered a github repo that updates the top 1000 most depended on packages daily.
+    // this check acts as a cross/sanity check.  The list here is not necessarily the
+    // "source of truth", and could lead to false positives ( for instance if the owners algorithm
+    // is wrong or their server goes down and doesn't update the list ), but it could also help
+    // find/root cause issues that other methods would not, for instance if the styling changes on 
+    // the main npm page.  Because there are inconsistencies between the two sources definitions of
+    // top packages, I will grab the COUNT/2 top packages from this list and check that they are all
+    // in the packages dir
+    function crossCheck(callback) {
+        let url = 'https://gist.github.com/anvaka/8e8fa57c7ee1350e3491#file-01-most-dependent-upon-md';
+        let packageList = [];
+        request({uri: url}, ( error, response, body ) => {
+            jsdom.env(body, (err, window) => { 
+                let index = 0;
+                let lists =  window.document.getElementsByTagName('ol');
+                for ( let list of lists ) {
+                    let pkgs = list.getElementsByTagName('li');
+                    for ( let pkg of pkgs ) {
+                        let links = pkg.getElementsByTagName('a');
+                        if ( links.length === 1 ) {
+                            packageList.push( links[0].innerHTML );
+                            index += 1;
+                        }
+                        if ( index >= COUNT/2 ) {
+                            for ( pkg of packageList ) {
+                                let pkgCopy = pkg;
+                                // in the provided function verifyLodash require is called.
+                                // this works if all of the depended upon modules are on our
+                                // system, but will not work in general, since per instructions
+                                // I am not installing the packages, I am simply downloading and
+                                // untarring their source code.  Thus I have replaced the "require"
+                                // with fs.stat for this check.
+                                fs.stat( 'packages/'+pkgCopy, ( err, stat ) => {
+                                    if ( err  ) {
+                                        t.error( err, pkgCopy+' not found' ); 
+                                        callback();
+                                    }
+                                });
+                            }
+                            t.ok( true, 'Cross check packages found' );
+                            callback();
+                            return;
+                        }
+                    }
+                }
+            });
+        })
     }
 })
