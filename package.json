@@ -6,7 +6,8 @@
   "dependencies": {
     "jsdom": "^9.0.0",
     "json5": "^0.5.1",
-    "request": "^2.83.0"
+    "request": "^2.83.0",
+    "tar": "^4.0.1"
   },
   "devDependencies": {
     "get-folder-size": "~1.0.0",
