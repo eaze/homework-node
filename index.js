@@ -7,16 +7,26 @@ const NPM = '/usr/local/bin/npm';
 const TAR = '/usr/bin/tar';
 const tar = require('tar');
 const fs = require('fs');
+const winston = require('winston');
 
 class Dependencies{
     constructor() {
         this.offset=0;
         this.downloadPackages = this.downloadPackages.bind(this);
-        this.CMDLINE_MODE = parseInt(process.env.CMDLINE_MODE) || 0
+        this.CMDLINE_MODE = parseInt(process.env.CMDLINE_MODE) || 0;
+        winston.level = process.env.LOG_LEVEL;
     }
 
     requestCallback(error, response, body) {
+        winston.log( 'debug', 'In requestCallback, offset = ', this.offset );
+        if ( error ) {
+            winston.log( 'warning', 'In requestCallback, request returned error: ', error );
+        }
+            
         jsdom.env(body, function (err, window) {
+            if ( err ) {
+                winston.log( 'warning', 'jsdom returned error: ', err );
+            }
             // it is possible to simply call getElementsByClassName('name'), but I believe this
             // is more error prone, since the name class would be more likely to be reused for a non
             // package than the package-details class
@@ -31,11 +41,12 @@ class Dependencies{
 
                 // error handling
                 if ( typeof pkg.getElementsByClassName !== 'function' ) {
+                    winston.log( 'debug', 'package-details tag had unexpected format', pkg );
                     continue;
                 }
                 let names = pkg.getElementsByClassName('name');
                 if ( names.length !== 1 ) {
-                    console.log( "Error:", names );
+                    winston.log( 'debug', 'name tag had unexpected format: ',  names );
                     continue;
                 }
 
@@ -44,17 +55,19 @@ class Dependencies{
                 let name = names[0].href.replace('/package/', '');
                 var invalid_name_reg = new RegExp("[^a-z0-9-.@/]","i");
                 if ( invalid_name_reg.test(name) ) {
-                    console.log( "Error:", name, " is invalid node module name " );
+                    winston.log( 'warning', 'Invalid node module name: ', name );
                     continue;
                 }
                     
                 package_names.push(name);
             }
     
+            winston.log( 'debug', 'Gathered ' + package_names.length + ' package names from request' );
             let new_offset = this.offset + package_names.length;
             // if count > total amount of packages scraped, grab next page
             if ( new_offset < this.count ) {
                 let url = 'https://www.npmjs.com/browse/depended?offset='+new_offset;
+                winston.log( 'debug', 'Grabbing packages from ', url);
                 request(url, this.requestCallback.bind(this));
             }
     
@@ -83,10 +96,12 @@ class Dependencies{
                 let cmd = 'mkdir -p "packages/'+pkg_name+ '"; '+TAR+' -xzvf '+data.toString().trim() + ' -C "packages/'+pkg_name+'" --strip-components=1';
                 // spawn seems to fail for large tarballs, for example rxjs
                 let untar = cp.exec(cmd);
-                untar.on('error', ( err ) => { console.log( "Error: ", err ) } );
+                untar.on('error', ( err ) => { winston.log( 'warning', 'error untarring package ', pkg_name, err ) } );
                 untar.on('exit', (code,signal) => {
                     packages_downloaded += 1;
+                    winston.log( 'debug', pkg_name + ' downloaded, ' + packages_downloaded + ' pacakages downloaded' );
                     if ( packages_downloaded >= this.count ) {
+                        winston.log( 'debug', 'All packacges downloaded' );
                         this.callback();
                     }
                 });
@@ -112,7 +127,9 @@ class Dependencies{
                             C: 'packages/'+pkg_name
                         })).on( 'close', _ => { 
                             packages_downloaded += 1;
+                            winston.log( 'debug', pkg_name + ' downloaded, ' + packages_downloaded + ' pacakages downloaded' );
                             if ( packages_downloaded >= this.count ) {
+                                winston.log( 'debug', 'All packacges downloaded' );
                                 this.callback();
                             }
                         })
