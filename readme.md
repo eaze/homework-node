@@ -1,6 +1,16 @@
 # Eaze Node.js Homework
 
-> Our Node.js code challenge for engineering applicants
+> Joshua Grossberg's response Node.js code challenge for engineering applicants
+
+### Notes
+
+1. I am using node v4.8.4.
+2. The environment var LOG_LEVEL can be set to any of the winston supported log levels.  
+3. I coded the scraper with two approaches:  one that makes heavy use of linux cmdline via child_process, and one that more heavily relies on streams.  The stream mode is the default, but you can switch modes by setting CMDLINE_MODE=1.
+4.  The verifyCount test does not account for scoped modules.  scoped modules live under a common directory, and so simply counting the dirs under packages as is done in verifyCount will not work.  Specifically, in the top 100 most depended upon repos there are several modules scoped under @angular.  I have supplied a fix in this repo.
+5.  The verifyLodash test does work on my system, but attempting to require the downloaded package does not work for all packages, since I am not actually installing the packages, simply downloading tarballs of their source.  I kept the verifyLodash function as is, but did not use this method in my added test.
+6. I added a test that checks against the npm rank gist, which is updated daily.  The lists are not 100% in agreement, so I relax my requirements.  I simply test that the top COUNT/2 packages on the Gist are present in the packages directory.  This test could lead to false positives but could also uncover issues with the way the npm registry is scraped.
+7.  Please let me know if there is an aspect of the assignment that I have misunderstood.
 
 ## Project
 
