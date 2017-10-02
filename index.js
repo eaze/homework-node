@@ -2,7 +2,6 @@
 const request = require('request');
 const jsdom = require("jsdom");
 const cp = require('child_process');
-var JSON5 = require('json5');
 const NPM = '/usr/local/bin/npm';
 const TAR = '/usr/bin/tar';
 const tar = require('tar');

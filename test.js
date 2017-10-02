@@ -60,8 +60,6 @@ test('download', function (t) {
         })
     }
 
-    // FIXME: this is inaccurate when scoped packages are downloaded:
-    // https://docs.npmjs.com/misc/scope#requiring-scoped-packages
     function verifySize (callback) {
         folderSize('./packages', function (err, size) {
             if (err) return callback(err)
