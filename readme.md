@@ -20,6 +20,12 @@ We've created a failing `npm test` command for you. You can add additional tests
 
 Passing tests don't guarantee that your solution is perfect but a failing test definitely indicates a problem.
 
+We've also included Docker configuration. We'll use this to test your solution in a stable/isolated environment:
+
+```sh
+docker-compose run app
+```
+
 ## Bonus
 
 How high can you go? Set the `COUNT` environment variable when running your tests to download more than the top 10.
