@@ -19,7 +19,10 @@ function downloadPackages(count, callback) {
     if (err) return callback(err);
 
     matches = matches.reduce((a, c) => a.concat(c), []).slice(0, count);
-    return clean(matches, callback);
+    clean((err) => {
+      if (err) return callback(err);
+      return downloadAndExpand(matches, callback);
+    });
   });
 }
 
@@ -29,12 +32,28 @@ function getMatches(url, cb) {
     if (err) return callback(err);
 
     let matches = html.match(/\/([a-z0-9-_]+)">([0-9.]+[^<]*)/g);
+    if (!matches || !matches[0]) return cb(new Error('No matches found in html.'));
 
     return cb(null, matches);
   });
 }
 
-function clean(matchArr, cb) {
+function clean(cb) {
+  fs.readdir('./packages', (err, files) => {
+    if (err) return cb(err);
+
+    files = files.filter((file) => !/^\./.test(file));
+    if (!files || files.length === 0) return cb(null);
+
+    files.unshift('-rf');
+    cp.execFile('rm', files, { cwd: './packages' }, (err) => {
+      if (err) return cb(err);
+      cb(null);
+    });
+  });
+}
+
+function downloadAndExpand(matchArr, cb) {
   async.eachLimit(matchArr, 10, (match, cb) => {
     const pkgName = match.split('/')[1].split('">')[0];
     const opts = { cwd: './packages' };
