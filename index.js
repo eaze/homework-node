@@ -1,22 +1,25 @@
 'use strict'
 
-const request = require('request');
+const fs = require('fs');
 const async = require('async');
+const request = require('request');
+const cp = require('child_process');
 const popularUrl = 'https://www.npmjs.com/browse/depended?offset=';
 
-module.exports = downloadPackages
+module.exports = downloadPackages;
 
 function downloadPackages(count, callback) {
   const pages = Math.ceil(count / 36);
 
   async.times(pages, (n, next) => {
+
     getMatches(`${popularUrl}${(n * 36)}`, next);
+
   }, (err, matches) => {
     if (err) return callback(err);
 
     matches = matches.reduce((a, c) => a.concat(c), []).slice(0, count);
-    const cleanMatches = clean(matches);
-    return callback(null, cleanMatches);
+    return clean(matches, callback);
   });
 }
 
@@ -31,12 +34,27 @@ function getMatches(url, cb) {
   });
 }
 
-function clean(matchArr) {
-  let cleanObj = {};
-  matchArr.forEach(m => {
-    let nameAndVersion = m.split('/')[1].split('">');
-    console.log(nameAndVersion);
-    //TODO create downloadable tarball urls from this split
-    // it's time to change this to an async loop to remove the necessity of looping twice
+function clean(matchArr, cb) {
+  async.eachLimit(matchArr, 10, (match, cb) => {
+    const pkgName = match.split('/')[1].split('">')[0];
+    const opts = { cwd: './packages' };
+    let tarName;
+
+    async.series([
+      (cb) => cp.exec(`npm pack ${pkgName}`, opts, (err, sout, serr) => {
+        if (err) return cb(err);
+        tarName = sout.trim();
+        cb(null);
+      }),
+      (cb) => fs.mkdir(`./packages/${pkgName}`, cb),
+      (cb) => cp.exec(`tar -xvf ${tarName} -C ${pkgName} --strip-components 1`, opts, cb),
+      (cb) => cp.exec(`rm -rf ${tarName}`, opts, cb)
+    ], (err) => {
+      if (err) return cb(err);
+      cb(null);
+    });
+  }, (err) => {
+    if (err) return cb(err);
+    cb(null);
   });
 }
