@@ -2,10 +2,14 @@
   "scripts": {
     "test": "node test.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "async": "2.5.0",
+    "request": "2.83.0"
+  },
   "devDependencies": {
     "get-folder-size": "~1.0.0",
-    "tape": "~4.6.0",
-    "run-series": "^1.1.4"
+    "jsdoc": "^3.5.5",
+    "run-series": "^1.1.4",
+    "tape": "~4.6.0"
   }
 }
